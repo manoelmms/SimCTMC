@@ -36,18 +36,16 @@ def poisson_random_variable(rate, simulation_time):
 
 
 if __name__ == "__main__":
-    arrival_rate = 0.9 # lambda
+    arrival_rate = 0.5 # lambda
     service_rate = 1 # mu
-    simulation_time = 10000
+    simulation_time = 1000
     number_of_queues = 100
-    t = 0
     done = 0
     T = 0
 
     arrival_times = poisson_random_variable(number_of_queues * arrival_rate, simulation_time)
     # print(arrival_times)
     queue_time = np.zeros(number_of_queues)
-    T = np.zeros(number_of_queues)
     
 
     while True:
@@ -70,14 +68,17 @@ if __name__ == "__main__":
         #t = queue_time[queue_index]
 
         #print(queue_time[queue_index])
-        print(f"({queue_index}, {queue_time[queue_index]}, {arrival_time}, {job_time}, {between_time})")
         #1° fila -> 9998.2 + 3, 2° -> 9998.5 + 1
-
+        if done % 10000 == 0:
+            print(f"({done}, {queue_index}, {queue_time[queue_index]}, {arrival_time}, {job_time}, {between_time})")
         if queue_time[queue_index] <= simulation_time:
-            #done+=1
-            T[queue_index] += (between_time) + job_time
+            done+=1
+            T += between_time + job_time
         if arrival_times == []:
+            print(f"({done}, {queue_index}, {queue_time[queue_index]}, {arrival_time}, {job_time}, {between_time})")
+            print(np.max(queue_time))
             break
     # print(simulation_time)
     print(done)
-    print((np.ones(number_queues) @ T)/100)
+    print(T)
+    print(T/done)
