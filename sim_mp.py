@@ -1,5 +1,6 @@
 # Simulation for a M/M/1 FIFO queue with Poisson arrivals and exponential service times
 # Exercice 8.27 from Upfal and Mitzenmacher book of Probability and Computing
+# Multiprocessing version
 
 # Poisons arrivals with rate lambda < 1 [0.5; 0.8; 0.9; 0.99]
 # Exponential service times with rate mu = 1 (seconds)
@@ -11,6 +12,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import multiprocessing as mp
 
 def exponential_random_variable(rate):
     return -math.log(random.uniform(0,1)) / rate # Inverse of the CDF of the exponential distribution
@@ -40,7 +42,7 @@ def simulation(arrival_rate, service_rate, simulation_time, number_of_queues):
     elapsed_time = time.time() # Timer to measure the elapsed time of the simulation for testing purposes
     while True:
         # Creating a progress bar
-        print(f"\rRemaining Jobs: {len(arrival_times)}", end="") # always ends with 1, but it is not a problem! 
+        # print(f"\rRemaining Jobs: {len(arrival_times)}", end="") # always ends with 1, but it is not a problem! 
 
         arrival_time = arrival_times.pop(0) # Get the first job arrival time from the list
         jobs += 1
@@ -94,8 +96,10 @@ if __name__ == "__main__":
 
     result = []
 
-    for arrival_rate in arrival_rate_list:
-        result.append(simulation(arrival_rate, service_rate, simulation_time, number_of_queues))
+    # Create a pool of workers
+    pool = mp.Pool(mp.cpu_count())
+    result = pool.starmap(simulation, [(arrival_rate, service_rate, simulation_time, number_of_queues) for arrival_rate in arrival_rate_list])
+    pool.close()
 
     plt.plot(arrival_rate_list, [r[0] for r in result], label='Mean Time in System')
     plt.title('Mean Time in System')
