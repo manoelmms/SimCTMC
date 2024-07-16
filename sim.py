@@ -10,6 +10,7 @@ import math
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 
 def exponential_random_variable(rate):
@@ -22,63 +23,61 @@ def poisson_random_variable(rate, simulation_time):
     # Poisson random variable is the sum of exponential random variables with rate lambda
     t = 0
     time = []
-    while t < simulation_time: # 10000 seconds
+    while t < simulation_time:
         t += exponential_random_variable(rate)
         time.append(t)
     if time[len(time)-1] > simulation_time: # Remove the last element if it is greater than 10000
         return time[:-1]
     return time
-    
-# t=1.25 [2] 3.25
-# t=2 [1] (2.25) 4.25
-# t=8
-#E[T] = 10000 / n (tempo / nro caras completos)
 
 
 if __name__ == "__main__":
-    arrival_rate = 0.5 # lambda
+    arrival_rate_list = [0.5, 0.8, 0.9, 0.99] # lambda
     service_rate = 1 # mu
-    simulation_time = 1000
-    number_of_queues = 100
-    done = 0
-    T = 0
+    simulation_time = 10000 # 10000 seconds
+    number_of_queues = 100 # Number of M/M/1 FIFO queues
+    done = 0 # Number of jobs that have been completed
 
-    arrival_times = poisson_random_variable(number_of_queues * arrival_rate, simulation_time)
-    # print(arrival_times)
-    queue_time = np.zeros(number_of_queues)
-    
+    for arrival_rate in arrival_rate_list:
 
-    while True:
-        arrival_time = arrival_times.pop(0) # Get the first element of the list # 1s -> 4
+        arrival_times = poisson_random_variable(number_of_queues * arrival_rate, simulation_time) # Generate Poisson arrival times
 
-        # Uniformly choose a queue
-        queue_index = random.randint(0, number_of_queues-1)
-        job_time = exponential_random_variable(service_rate)
+        queue_free_time = np.zeros(number_of_queues) # Vector storing the time when the queue is free for each queue
         
-        #tempo q o ultimo job saiu - o tempo que eu cheguei = 25 - 15 = 10
-        between_time = queue_time[queue_index] - arrival_time # FIXME
-        if between_time < 0:
-            between_time = 0
-        #queue_time[queue_index] = waiting_time + job_time
-        # t = 0, e = 3.25, [0], T = [0 - 0 + 3.25], [0 + T] = [3.25]
-        # t = 2, e = 1, [3.25], T = (3.25 - 2 + 1), [3.25 + j] = 
-        #2 * 3.25 - arrival + job_time
-        queue_time[queue_index] = queue_time[queue_index] + job_time
+        elapsed_time = time.time() # Timer to measure the elapsed time of the simulation for testing purposes
+        while True:
+            # Creating a progress bar
+            print(f"\rRemaining Jobs: {len(arrival_times)}", end="") # always ends with 1, but it is not a problem! 
 
-        #t = queue_time[queue_index]
+            arrival_time = arrival_times.pop(0) # Get the first job arrival time from the list
 
-        #print(queue_time[queue_index])
-        #1° fila -> 9998.2 + 3, 2° -> 9998.5 + 1
-        if done % 10000 == 0:
-            print(f"({done}, {queue_index}, {queue_time[queue_index]}, {arrival_time}, {job_time}, {between_time})")
-        if queue_time[queue_index] <= simulation_time:
-            done+=1
-            T += between_time + job_time
-        if arrival_times == []:
-            print(f"({done}, {queue_index}, {queue_time[queue_index]}, {arrival_time}, {job_time}, {between_time})")
-            print(np.max(queue_time))
-            break
-    # print(simulation_time)
-    print(done)
-    print(T)
-    print(T/done)
+            # Uniformly choose a queue
+            queue_index = random.randint(0, number_of_queues-1)
+
+            # Create a job with exponential service time
+            job_time = exponential_random_variable(service_rate)
+            
+            # Update the queue free time
+
+            if queue_free_time[queue_index] < arrival_time:
+                queue_free_time[queue_index] = arrival_time + job_time
+            else:
+                queue_free_time[queue_index] += job_time
+
+            if queue_free_time[queue_index] > simulation_time:
+                pass # Ignoring job on this queue (Another servers can be available)
+            else:
+                done += 1
+
+            if len(arrival_times) == 0: # Arrival list is empty
+                break # Stop the simulation when all jobs have been processed
+            
+        print('\n' + '='*50) 
+        print(f"-> Lambda = {arrival_rate}")
+        print(f"-> Mu = {service_rate}")
+        print(f"Number of jobs completed: {done}")
+        print(f"{done/simulation_time} jobs per second")
+        print(f"Average Time in the system per job: {simulation_time/done} seconds")
+        print(f"Elapsed time in simulation: {time.time() - elapsed_time} seconds")
+
+    print("Simulation finished!")
